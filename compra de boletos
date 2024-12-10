@@ -1,0 +1,215 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.*;
+
+class Sala {
+    private String nombre;
+    private int boletosVendidos;
+    private double totalRecaudado;
+
+    public Sala(String nombre) {
+        this.nombre = nombre;
+        this.boletosVendidos = 0;
+        this.totalRecaudado = 0.0;
+    }
+
+    public void registrarVenta(double total) {
+        boletosVendidos++;
+        totalRecaudado += total;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public int getBoletosVendidos() {
+        return boletosVendidos;
+    }
+
+    public double getTotalRecaudado() {
+        return totalRecaudado;
+    }
+}
+
+abstract class Entrada {
+    protected double precioBase;
+
+    public abstract double calcularPrecio(int numBoletos, boolean es3D, boolean esMiercoles, boolean esAntesDe18);
+}
+
+class EntradaAdulto extends Entrada {
+    public EntradaAdulto() {
+        this.precioBase = 65; // Precio base para adulto
+    }
+
+    public double calcularPrecio(int numBoletos, boolean es3D, boolean esMiercoles, boolean esAntesDe18) {
+        double precio = precioBase;
+
+        if (esMiercoles) {
+            precio = 45;
+        } else if (esAntesDe18) {
+            precio = 52;
+        }
+
+        if (es3D) {
+            precio += 15; // Extra por 3D
+        }
+
+        return precio * numBoletos;
+    }
+}
+
+class EntradaNinio extends Entrada {
+    public EntradaNinio() {
+        this.precioBase = 42; // Precio base para niños
+    }
+
+    public double calcularPrecio(int numBoletos, boolean es3D, boolean esMiercoles, boolean esAntesDe18) {
+        double precio = precioBase;
+
+        if (esMiercoles) {
+            precio = 42; // Precios especiales miércoles
+        } else if (esAntesDe18) {
+            precio = 52;
+        }
+
+        if (es3D) {
+            precio += 15; // Extra por 3D
+        }
+
+        return precio * numBoletos;
+    }
+}
+
+class EntradaAdultoMayor extends Entrada {
+    public EntradaAdultoMayor() {
+        this.precioBase = 42; // Precio base para adultos mayores
+    }
+
+    public double calcularPrecio(int numBoletos, boolean es3D, boolean esMiercoles, boolean esAntesDe18) {
+        double precio = precioBase;
+
+        if (esMiercoles) {
+            precio = 42;
+        } else if (esAntesDe18) {
+            precio = 52;
+        }
+
+        if (es3D) {
+            precio += 15;
+        }
+
+        return precio * numBoletos;
+    }
+}
+
+public class SistemaVentaBoletos extends JFrame implements ActionListener {
+    private JComboBox<String> comboPeliculas, comboCategoria, comboSala;
+    private JCheckBox check3D;
+    private JSpinner spinnerBoletos;
+    private JButton botonVender, botonResumen;
+    private JLabel labelTotal;
+    private ArrayList<Sala> salas;
+    private HashMap<String, Entrada> entradas;
+    private double totalVentas;
+
+    public SistemaVentaBoletos() {
+        // Inicialización de la GUI
+        setTitle("Sistema de Venta de Boletos de Cine");
+        setLayout(new FlowLayout());
+
+        // Películas
+        comboPeliculas = new JComboBox<>(new String[]{"Película 1", "Película 2", "Película 3"});
+        add(new JLabel("Selecciona película:"));
+        add(comboPeliculas);
+
+        // Categoría de boletos
+        comboCategoria = new JComboBox<>(new String[]{"Adulto", "Niño", "Adulto Mayor"});
+        add(new JLabel("Selecciona categoría:"));
+        add(comboCategoria);
+
+        // Número de boletos
+        spinnerBoletos = new JSpinner(new SpinnerNumberModel(1, 1, 10, 1));
+        add(new JLabel("Número de boletos:"));
+        add(spinnerBoletos);
+
+        // Sala 3D
+        check3D = new JCheckBox("Sala 3D");
+        add(check3D);
+
+        // Tipo de sala
+        comboSala = new JComboBox<>(new String[]{"Normal", "3D"});
+        add(new JLabel("Selecciona tipo de sala:"));
+        add(comboSala);
+
+        // Botón para registrar venta
+        botonVender = new JButton("Vender");
+        botonVender.addActionListener(this);
+        add(botonVender);
+
+        // Resumen de ventas
+        botonResumen = new JButton("Mostrar Resumen");
+        botonResumen.addActionListener(this);
+        add(botonResumen);
+
+        // Total
+        labelTotal = new JLabel("Total Recaudado: $0.00");
+        add(labelTotal);
+
+        // Inicializar salas y entradas
+        salas = new ArrayList<>();
+        salas.add(new Sala("Normal"));
+        salas.add(new Sala("3D"));
+
+        entradas = new HashMap<>();
+        entradas.put("Adulto", new EntradaAdulto());
+        entradas.put("Niño", new EntradaNinio());
+        entradas.put("Adulto Mayor", new EntradaAdultoMayor());
+
+        totalVentas = 0.0;
+
+        setSize(400, 300);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setVisible(true);
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == botonVender) {
+            // Obtener valores
+            String categoria = (String) comboCategoria.getSelectedItem();
+            int numBoletos = (int) spinnerBoletos.getValue();
+            boolean es3D = check3D.isSelected();
+            boolean esMiercoles = false;  // Suponer que es miércoles para este ejemplo
+            boolean esAntesDe18 = true;  // Suponer que es antes de las 18:00
+
+            Entrada entrada = entradas.get(categoria);
+            double total = entrada.calcularPrecio(numBoletos, es3D, esMiercoles, esAntesDe18);
+
+            // Seleccionar sala
+            String tipoSala = (String) comboSala.getSelectedItem();
+            Sala sala = tipoSala.equals("3D") ? salas.get(1) : salas.get(0);
+
+            // Registrar venta
+            sala.registrarVenta(total);
+
+            totalVentas += total;
+
+            // Mostrar total
+            labelTotal.setText("Total Recaudado: $" + totalVentas);
+        } else if (e.getSource() == botonResumen) {
+            // Mostrar resumen de ventas
+            String resumen = "Resumen de Ventas:\n";
+            for (Sala sala : salas) {
+                resumen += sala.getNombre() + ": " + sala.getBoletosVendidos() + " boletos, $"
+                        + sala.getTotalRecaudado() + " recaudado.\n";
+            }
+            JOptionPane.showMessageDialog(this, resumen);
+        }
+    }
+
+    public static void main(String[] args) {
+        new SistemaVentaBoletos();
+    }
+}
